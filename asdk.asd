@@ -5,7 +5,6 @@
 (ql:quickload :hunchentoot) ;web server
 (ql:quickload :xmls)        ;simple xml parse
 (ql:quickload :postmodern)  ;database driver
-(ql:quickload :drakma)      ;http client
 ;;;;require end
 
 (defpackage :asdk-asd
@@ -21,11 +20,10 @@
   :description "daumkakao attendance system"
   :depends-on (:postmodern
 	       :hunchentoot
-	       :xmls
-	       :drakma)
+	       :xmls)
   :components ((:file "packages")
 	       (:file "db")
 	       (:file "www")
-	       (:file "routes-func")
+	       (:file "controller")
 	       (:file "routes")))
 

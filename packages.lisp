@@ -7,4 +7,7 @@
   (:use :cl
 	:hunchentoot
 	:xmls
-	:postmodern))
+	:postmodern
+	:drakma))
+
+

@@ -29,8 +29,8 @@
 *.hex
 
 # ignore tmp file
-.\#*\# 	#emacs
-\#* 	#emacs
-*.swp 	#gvim
-*.swo 	#gvim
+.\#*\#
+\#*
+*.swp
+*.swo
 *~

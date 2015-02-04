@@ -1,4 +1,8 @@
 (in-package :asdk)
 
-(defun test ()
-  "hello test aa aaa")
+(defun routes ()
+  (tbnl:request-uri*))
+
+(defun login ()
+  (tbnl:get-parameter "a"))
+

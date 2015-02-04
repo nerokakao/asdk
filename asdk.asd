@@ -22,6 +22,7 @@
 	       :hunchentoot
 	       :xmls)
   :components ((:file "packages")
+	       (:file "conf")
 	       (:file "db")
 	       (:file "www")
 	       (:file "controller")

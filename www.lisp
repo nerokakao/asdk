@@ -1,8 +1,5 @@
 (in-package :asdk)
 
-(defvar *host* nil
-  "webapp host")
-
 (defclass dk-acceptor (tbnl:acceptor)
   ((dispatch-table
     :initform '()
@@ -21,12 +18,14 @@
      when action return (funcall action)
      finally (call-next-method)))
 
-(defun dk-start (port)
-  (if (eql *host* nil)
-      (setf *host* (make-instance 'dk-acceptor :port port)))
-  (tbnl:start *host*))
+(defparameter *host* (make-instance 'dk-acceptor :port 4242))
 
-(defun dk-stop ()
+(defun dkstart ()
+  (if (not (eql *host* nil))
+      (tbnl:start *host*)))
+
+
+(defun dkstop ()
   (if (not (eql *host* nil))
       (tbnl:stop *host*)))
 

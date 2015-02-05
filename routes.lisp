@@ -149,4 +149,14 @@ but otherwise falls back to the hunchentoot defaults *dispatch-table* and easy-a
 
 
 
+;;test next
+(setf *routeslist*
+      (compile-routes
+       (:GET "/sr/:a" 'sr)))
+
+(defun sr ()
+  "hello simple sr")
+
+(setf *tmp* (make-instance 'simpleroutes-acceptor :port 4243))
+
 

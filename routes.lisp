@@ -104,7 +104,7 @@ the output of this macro can in turn be processed by simple-processor"
   "takes in a request uri and type (:GET, :POST, etc...) and loops through all
 compiled routes in *routeslist*. If it finds a route that matches
 ,it returns the associated handler and returns true. otherwise returns false"
-  (register-groups-bind (processed-uri) ("^([^?]*)\\??.*" request-uri)
+  (cl-ppcre:register-groups-bind (processed-uri) ("^([^?]*)\\??.*" request-uri)
     (loop for compiled-route in *routeslist* do
 	 (destructuring-bind (treqtype tregexp tvars tfntocall) compiled-route
 	   (declare (ignore tvars))
@@ -149,10 +149,4 @@ but otherwise falls back to the hunchentoot defaults *dispatch-table* and easy-a
 
 
 
-;;test next
-(setf *routeslist*
-      (compile-routes
-       (:GET "/sr" 'sr)))
 
-(defun sr ()
-  "hello simple sr")

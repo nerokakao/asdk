@@ -3,6 +3,7 @@
 (ql:quickload :hunchentoot)
 (ql:quickload :xmls)
 (ql:quickload :postmodern)
+(ql:quickload :drakma)
 ;;;;require end
 
 (defpackage :asdk-asd
@@ -18,7 +19,8 @@
   :description "daumkakao system"
   :depends-on (:postmodern
 	       :hunchentoot
-	       :xmls)
+	       :xmls
+	       :drakma)
   :components ((:file "packages")
 	       (:file "db")
 	       (:file "www")

@@ -5,6 +5,7 @@
 (ql:quickload :hunchentoot) ;web server
 (ql:quickload :xmls)        ;simple xml parse
 (ql:quickload :postmodern)  ;database driver
+(ql:quickload :cl-who)      ;lisp markup languages
 ;;;;require end
 
 (defpackage :asdk-asd

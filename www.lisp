@@ -76,11 +76,11 @@
   `(list ,@(loop for routespec in routespecs collect
 		(apply #'route-compile routespec))))
 
-(defvar *r-host* (make-instance 'r-acceptor :port 4242))
-
-(setf (dispatch-table *r-host*)
-      (compile-routes (:GET "/sr/:a" 'sr)))
-
-(defun sr (a)
-  (format t "in sr function~%")
-  (concatenate 'string "hello sr:" a))
+;(defvar *r-host* (make-instance 'r-acceptor :port 4242))
+;
+;(setf (dispatch-table *r-host*)
+;      (compile-routes (:GET "/sr/:a" 'sr)))
+;
+;(defun sr (a)
+;  (format t "in sr function~%")
+;  (concatenate 'string "hello sr:" a))

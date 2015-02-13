@@ -82,10 +82,50 @@
 
 ;; called by (tbnl:handle-request ((*acceptor* acceptor) (*request* request)))
 (defmethod tbnl:acceptor-dispatch-request ((acceptor app-acceptor) request)
-  (fn)
-  (funcall (funcall (tbnl:create-regex-dispatcher "/img1" 'fn) request))
-  )
+  (let ((fn (car (cdr (cdr(compile-uri-fn "GET" "/fn/:arg" 'fn)))))
+	(args (car (cdr (cdr (cdr (compile-uri-fn "GET" "/fn/:arg" 'fn)))))))
+    (apply fn '("123"))))
 
-(defun fn ()
-  "fn with aa~%")
+;; other function source in www.lisp now
+(defun compile-uri-fn (http-req-type uri fn-cb)
+  "eg: (route-compile ``get'' ``/a/b/:c'' 'fn) ==>> (LIST ``GET'' ``^/a/b/([^/]*)$'' FN '(C))"
+  (let* ((uri-to-lst (remove "" (cl-ppcre:split "/" uri) :test #'equal))
+	 (start-with-/-p (and (> (length uri) 0) (eql (elt uri 0) #\/)))
+	 (end-with-/-p (and (> (length uri) 1) (eql (last-ele uri) #\/)))
+	 (eles-with-colon (reverse (reduce #'(lambda (accum nxt)
+					       (if (str-start-with-colon-p nxt)
+						   (cons nxt accum)
+						   accum))
+					   uri-to-lst :initial-value '())))
+	 (upcase-type (string-upcase http-req-type))
+	 (regex-uri (concatenate 'string
+				 "^"
+				 (when start-with-/-p "/")
+				 (rm-last-ele (apply #'concatenate
+						     'string
+						     (loop for ele in uri-to-lst collect
+							  (if (str-start-with-colon-p ele)
+							      "([^/]*)/"
+							      (concatenate 'string
+									   ele
+									   "/")))))
+				 (when end-with-/-p "/")
+				 "$"))
+	 (args-lst (mapcar #'(lambda (item)
+				   (intern (string-upcase (subseq item 1))))
+			       eles-with-colon)))
+    `(,upcase-type ,regex-uri ,fn-cb (quote ,args-lst))))
+
+#+test
+(progn
+  (defvar *test* (make-instance 'app-acceptor :port 4242)))
+
+#+test
+(tbnl:start *test*)
+
+#+test
+(defun fn (arg)
+  arg)
+
+
 

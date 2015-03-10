@@ -1,6 +1,6 @@
 (in-package :cl-user)
 
-(ql:quickload '("hunchentoot"))
+(ql:quickload '("hunchentoot" "cl-ppcre"))
 
 (defpackage #:test
   (:use :cl :hunchentoot :cl-ppcre))
@@ -20,6 +20,7 @@
 (defparameter *default-param-regex* "([^\/]+)")
 
 (defun get-param-names (path)
+  "return param names in a list: (\":para1\" \":para2\") from path(string) \"/path/:para1/:para2\""
   (cl-ppcre:all-matches-as-strings *route-param-scanner* path))
 
 (defun get-param-matches (path)
@@ -27,7 +28,6 @@
 	(dummy '())
 	(res '()))
     (dolist (m matches)
-      (format t "~A~%" m)
       (push nil dummy))
     (mapc #'(lambda (&rest e) (setf res (append res e))) matches dummy)
     res))
@@ -44,6 +44,7 @@
 		      (cl-ppcre:regex-replace p new-path (format nil "(~A)" it)))
 		(setf new-path
 		      (cl-ppcre:regex-replace p new-path pattern))))))
+    (format t "^~A$~%" new-path)
     (cl-ppcre:create-scanner (format nil "^~A$" new-path))))
 
 (defun gen-route (template)
@@ -55,4 +56,27 @@
      :fn-handler fn-handler)))
   
 (defun match-handler (route request)
-  ()
+  ())
+
+
+    
+    
+#+test
+(mapc #'(lambda (&rest e) (format t ">>~A~%" e)) '(1 2 6) '(3 4 5) '("a"))
+
+#+test
+(cl-ppcre:create-scanner (format nil "^~A$" "/path/:a/:b"))
+
+#+test
+(gen-route '(get "/path/:a" fn :a "\\d+"))
+
+#+test
+(gen-route '(get "/path" fn))
+
+#+test
+(destructuring-bind (http-type path fn-handler &rest params-matches) '(get "/path/:a" fn :a "\\d+")
+  (make-path-scanner path params-matches))
+
+#+test
+(destructuring-bind (http-type path fn-handler &rest params-matches) '(get "/path" fn)
+  (make-path-scanner path params-matches))

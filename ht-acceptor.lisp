@@ -77,7 +77,7 @@
 (defun defunction (func)
   (if (fboundp func)
       func
-      #'(lambda () (format nil "Function Handler not implemented!"))))
+      #'(lambda (&rest body) (format nil "Function Handler not implemented! ~A" body))))
 
 (defmethod tbnl:acceptor-dispatch-request ((acceptor ht-acceptor) request)
   (loop for route in *routes*
@@ -99,7 +99,7 @@
 #+test
 (progn
   (pop *routes*)
-  (add-route '(get "/index/:num/:str" show-index :str "\\w+" :num "\\d+"))
+  (add-route '(get "/index/:a/:b" show-inde :a "\\d+" :b "\\d+"))
 
   (defun show-index (params)
     (let ((num (getf params :num)))

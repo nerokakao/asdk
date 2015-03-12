@@ -24,6 +24,7 @@
   (cl-ppcre:all-matches-as-strings *route-param-scanner* path))
 
 (defun get-param-matches (path)
+  "return '(:A NIL :B NIL) if from path /path/:a/:b"
   (let ((matches (mapcar #'read-from-string (get-param-names path)))
 	(dummy '())
 	(res '()))
@@ -33,6 +34,7 @@
     res))
 
 (defun make-path-scanner (path params-matches)
+  "input /path/:a '(A `\\d+')  output(as string) ^/path/([^/]+)$"
   (let* ((new-path path)
 	 (param-names (get-param-names path))
 	 (pattern *default-param-regex*))
@@ -44,10 +46,10 @@
 		      (cl-ppcre:regex-replace p new-path (format nil "(~A)" it)))
 		(setf new-path
 		      (cl-ppcre:regex-replace p new-path pattern))))))
-    (format t "^~A$~%" new-path)
     (cl-ppcre:create-scanner (format nil "^~A$" new-path))))
 
 (defun gen-route (template)
+  "eg: input '(get `/path/:a' fn :a `\\d+')"
   (destructuring-bind (http-type path fn-handler &rest params-matches) template
     (make-route
      :http-type (read-from-string (concatenate 'string ":" (string http-type)))
@@ -56,11 +58,74 @@
      :fn-handler fn-handler)))
   
 (defun match-handler (route request)
+  (let ((params (get-param-matches (route-path route))))
+    (multiple-value-bind (match results)
+	(cl-ppcre:scan-to-strings (route-path-scanner route) (tbnl:script-name request))
+      (when results
+	(loop
+	     for v in (coerce results 'list)
+	     for (p vv) on params by #'cddr
+	     do (setf (getf params p) v)))
+      (if (or (and match t (eq (request-method request) :HEAD))
+	      (and match (eq (route-http-type route) (request-method request))))
+	  (return-from match-handler (list (route-fn-handler route) params))
+	  (return-from match-handler (list nil nil))))))
+
+(defclass ht-acceptor (tbnl:acceptor)
   ())
 
+(defun defunction (func)
+  (if (fboundp func)
+      func
+      #'(lambda () (format nil "Function Handler not implemented!"))))
 
+(defmethod tbnl:acceptor-dispatch-request ((acceptor ht-acceptor) request)
+  (loop for route in *routes*
+       for (action params) = (match-handler route request)
+       when action return (if params
+			      (funcall (defunction action) params)
+			      (funcall (defunction action)))
+       finally (call-next-method)))
+
+(defun add-route (template)
+  (push (gen-route template) *routes*))
+
+#+test
+(defvar *server* (make-instance 'ht-acceptor :port 4242))
+
+#+test
+(tbnl:start *server*)
+
+#+test
+(progn
+  (pop *routes*)
+  (add-route '(get "/index/:num/:str" show-index :str "\\w+" :num "\\d+"))
+
+  (defun show-index (params)
+    (let ((num (getf params :num)))
+      (format t "~A~%" params)
+      num)))
+
+
+
+#+test
+(loop
+     for i in '(1 2 3)
+     )
+
+#+test
+(multiple-value-bind (a b) '(2 2)
+  (format t "~%~A ~A~%" a b))
+
+#+test
+(get-param-matches "/path/:a/:b")
+
+#+test
+(get-param-names "/path/:a/:b")
     
-    
+#+test
+(make-path-scanner "/path/:a" '(A "\\d+"))
+
 #+test
 (mapc #'(lambda (&rest e) (format t ">>~A~%" e)) '(1 2 6) '(3 4 5) '("a"))
 
@@ -71,10 +136,11 @@
 (gen-route '(get "/path/:a" fn :a "\\d+"))
 
 #+test
-(gen-route '(get "/path" fn))
+(gen-route '(get "/path/:para1" fn))
 
 #+test
 (destructuring-bind (http-type path fn-handler &rest params-matches) '(get "/path/:a" fn :a "\\d+")
+  (format t "~%~A~%" params-matches)
   (make-path-scanner path params-matches))
 
 #+test

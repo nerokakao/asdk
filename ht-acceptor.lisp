@@ -28,10 +28,27 @@
   (let ((matches (mapcar #'read-from-string (get-param-names path)))
 	(dummy '())
 	(res '()))
-    (dolist (m matches)
+    (do ((var 0 (1+ var)))
+	((>= var (length matches)))
       (push nil dummy))
+    ;;combine two list to a plist: '(:a :b) '(nil nil) => '(:a nil :b nil)
     (mapc #'(lambda (&rest e) (setf res (append res e))) matches dummy)
     res))
+
+#+test
+(do ((a 0 (1+ a)))
+    ((= 3 a))
+  (format t "~A~%" a))
+
+#+test
+(let ((dummy nil))
+  (mapcar #'(lambda (&rest x) (setf dummy (append dummy x)))
+	  '(:a :b)
+	  '(nil nil))
+  dummy)
+
+#+test
+(mapcar #'read-from-string (get-param-names "/path/:a/:b"))
 
 (defun make-path-scanner (path params-matches)
   "input /path/:a '(A `\\d+')  output(as string) ^/path/([^/]+)$"
@@ -47,6 +64,15 @@
 		(setf new-path
 		      (cl-ppcre:regex-replace p new-path pattern))))))
     (cl-ppcre:create-scanner (format nil "^~A$" new-path))))
+
+#+test
+(dolist (p '(":a" ":b"))
+  (format t "p: ~A~%" p)
+  (let ((it (getf '(:a 1 :b 2) (read-from-string p))))
+    (format t "~A~%" it)))
+
+#+test
+(getf '(":a" ":b") ":a")
 
 (defun gen-route (template)
   "eg: input '(get `/path/:a' fn :a `\\d+')"
@@ -88,7 +114,43 @@
        finally (call-next-method)))
 
 (defun add-route (template)
-  (push (gen-route template) *routes*))
+  "template:  '(get `/path/:a' fn :a `\\d+')
+index=0:symbol index=1:string index=2:symbol ...
+与http请求类型和url匹配, 如果列表里存在, 更新"
+  (let ((method (read-from-string (concatenate 'string ":" (string (car template)))))
+	(path (car (cdr template))))
+    (do ((i 0 (1+ i)))
+	((>= i (length *routes*)) (push (gen-route template) *routes*))
+      (and (equal method (route-http-type (elt *routes* i)))
+	   (equal path (route-path (elt *routes* i)))
+	   (setf (elt *routes* i) (gen-route template))
+	   (return-from add-route (elt *routes* i))))))
+
+(defun del-route (template)
+  "only need method and path"
+  (let ((method (read-from-string (concatenate 'string ":" (string (car template)))))
+	(path (car (cdr template))))
+    (do ((i 0 (1+ i)))
+	((>= i (length *routes*)) nil)
+      (and (equal method (route-http-type (elt *routes* i)))
+	   (equal path (route-path (elt *routes* i)))
+	   (setf *routes* (del-lst-with-index i *routes*))
+	   (return-from del-route nil)))))
+
+(defun del-lst-with-index (index lst)
+  "按照下标删除, 新生产一个已经删除的列表"
+  (do ((i 0 (1+ i))
+       (len (length lst))
+       (new-lst '()))
+      ((>= i len) (reverse new-lst))
+    (if (/= i index)
+	(push (elt lst i) new-lst))))
+
+#+test
+(equalp (gen-route '(get "/path" fn)) (gen-route '(get "/path" fn)))
+
+#+test
+(equalp "1" "1")
 
 #+test
 (defvar *server* (make-instance 'ht-acceptor :port 4242))
@@ -98,11 +160,10 @@
 
 #+test
 (progn
-  (pop *routes*)
   (add-route '(get "/index/:a/:b" show-inde :a "\\d+" :b "\\d+"))
 
   (defun show-index (params)
-    (let ((num (getf params :num)))
+    (let ((num (getf params :a)))
       (format t "~A~%" params)
       num)))
 
